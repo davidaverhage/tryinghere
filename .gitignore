@@ -1,0 +1,63 @@
+# Build artifacts
+*.o
+*.elf
+*.velf
+*.self
+*.prx
+*.sfo
+*.vpk
+EBOOT.PBP
+eboot.bin
+param.sfo
+objs/
+deps/
+*.d
+*.a
+build/
+pkg/
+
+# Temporary files
+*.cache
+*.log
+*.tmp
+*~
+.DS_Store
+Makefile.cache
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.vs/
+*.user
+*.suo
+
+# Build directories
+dist/
+bin/
+lib/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+*.cmake
+!vita.toolchain.cmake
+
+# Source control
+.git/
+.gitmodules
+
+# Don't ignore important makefiles
+!Makefile
+!Makefile.vita
+!*.mk
+
+# Wagic specific
+projects/mtg/bin/*.res
+*.EBOOT
+
+# Don't ignore the cloned source initially
+# (can be removed after extraction)
+wagic-source/
