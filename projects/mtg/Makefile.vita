@@ -1,0 +1,149 @@
+###############################################################################
+# Wagic PlayStation Vita Makefile
+# This builds a .vpk package for PlayStation Vita
+###############################################################################
+
+# VitaSDK environment setup
+VITASDK := $(shell psp-config --pspsdk-path 2>/dev/null || echo "/usr/local/vitasdk")
+PREFIX  := $(VITASDK)/bin/arm-vita-eabi
+CC      := $(PREFIX)-gcc
+CXX     := $(PREFIX)-g++
+AR      := $(PREFIX)-ar
+STRIP   := $(PREFIX)-strip
+
+# Application metadata
+TARGET		= Wagic
+TITLE_ID	= WAGI00001
+TITLE_NAME	= Wagic The Homebrew
+VERSION		= 01.00
+
+# Source files (same as PSP build)
+OBJS	= objs/InteractiveButton.o objs/AbilityParser.o objs/ActionElement.o \
+	objs/ActionLayer.o objs/ActionStack.o objs/AIHints.o objs/AIMomirPlayer.o \
+	objs/AIPlayer.o objs/AIPlayerBaka.o objs/AIStats.o objs/AllAbilities.o \
+	objs/CardGui.o objs/CardDescriptor.o objs/CardDisplay.o \
+	objs/CardPrimitive.o objs/CardSelector.o objs/CardSelectorSingleton.o \
+	objs/Counters.o objs/Credits.o objs/Damage.o objs/DamagerDamaged.o \
+	objs/DeckDataWrapper.o objs/DeckEditorMenu.o objs/DeckMenu.o \
+	objs/DeckMenuItem.o objs/DeckMetaData.o objs/DeckStats.o objs/DuelLayers.o \
+	objs/ExtraCost.o objs/GameApp.o objs/GameLauncher.o \
+	objs/GameObserver.o objs/GameOptions.o objs/GameState.o \
+	objs/GameStateAwards.o objs/GameStateDeckViewer.o objs/GameStateDuel.o \
+	objs/DeckManager.o objs/GameStateMenu.o objs/GameStateOptions.o \
+	objs/GameStateShop.o objs/GameStateStory.o objs/GameStateTransitions.o \
+	objs/GuiAvatars.o objs/GuiBackground.o objs/GuiCardsController.o \
+	objs/GuiCombat.o objs/GuiFrame.o objs/GuiHand.o objs/GuiLayers.o \
+	objs/GuiMana.o objs/GuiPhaseBar.o objs/GuiPlay.o objs/GuiStatic.o \
+	objs/IconButton.o objs/ManaCost.o objs/ManaCostHybrid.o  objs/MenuItem.o \
+	objs/ModRules.o objs/MTGAbility.o objs/MTGCardInstance.o objs/MTGCard.o \
+	objs/MTGDeck.o objs/MTGDefinitions.o objs/MTGGamePhase.o objs/MTGGameZones.o \
+	objs/MTGPack.o objs/MTGRules.o objs/Navigator.o objs/ObjectAnalytics.o \
+	objs/OptionItem.o objs/PhaseRing.o objs/Player.o objs/PlayerData.o \
+	objs/PlayGuiObjectController.o objs/PlayGuiObject.o objs/PlayRestrictions.o \
+	objs/Pos.o objs/PrecompiledHeader.o objs/PriceList.o objs/ReplacementEffects.o \
+	objs/Rules.o objs/SimpleMenu.o objs/SimpleButton.o objs/SimpleMenuItem.o \
+	objs/SimplePad.o objs/SimplePopup.o objs/StoryFlow.o objs/StyleManager.o \
+	objs/Subtypes.o objs/TargetChooser.o objs/TargetsList.o objs/TextScroller.o \
+	objs/ThisDescriptor.o objs/Token.o objs/Translate.o objs/TranslateKeys.o \
+	objs/Trash.o objs/utils.o objs/WEvent.o objs/WResourceManager.o \
+	objs/WCachedResource.o objs/WDataSrc.o objs/WGui.o objs/WFilter.o objs/Tasks.o \
+	objs/WFont.o objs/WParsedInt.o objs/CarouselDeckView.o objs/GridDeckView.o objs/DeckView.o
+
+# Include directories
+INCLUDES = -I../../JGE/include \
+           -I../../JGE/src \
+           -I../../JGE/src/zipFS \
+           -I./include \
+           -I../../Boost
+
+# Compiler flags
+CFLAGS   = -O2 -Wall -DVITA -DTIXML_USE_STL $(INCLUDES)
+CXXFLAGS = $(CFLAGS) -std=c++11 -fno-rtti -fno-exceptions
+ASFLAGS  = $(CFLAGS)
+
+# Linker flags
+LDFLAGS  = -Wl,-q
+
+# Libraries
+LIBS = -lSceDisplay_stub \
+       -lSceGxm_stub \
+       -lSceCtrl_stub \
+       -lSceAudio_stub \
+       -lSceSysmodule_stub \
+       -lSceCommonDialog_stub \
+       -lfreetype \
+       -ljpeg \
+       -lpng \
+       -lz \
+       -lm \
+       -lstdc++
+
+# Vita packaging files
+EBOOT_PATH = eboot.bin
+PARAM_SFO = param.sfo
+
+# Build rules
+all: $(TARGET).vpk
+
+%.vpk: eboot.bin param.sfo
+	@echo "Creating VPK package..."
+	@mkdir -p pkg/sce_sys
+	@cp eboot.bin pkg/
+	@cp param.sfo pkg/sce_sys/
+	@cp icon0.png pkg/sce_sys/ 2>/dev/null || echo "Warning: icon0.png not found"
+	@cp -r bin/Res pkg/ 2>/dev/null || echo "Warning: Res directory not found"
+	@cd pkg && zip -r ../$(TARGET).vpk . -x "*.git*"
+	@echo "VPK created: $(TARGET).vpk"
+
+eboot.bin: $(TARGET).velf
+	@echo "Creating EBOOT.BIN..."
+	vita-make-fself $(TARGET).velf eboot.bin
+
+$(TARGET).velf: $(TARGET).elf
+	@echo "Creating VELF..."
+	vita-elf-create $(TARGET).elf $(TARGET).velf
+
+$(TARGET).elf: $(OBJS)
+	@echo "Linking ELF..."
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+param.sfo:
+	@echo "Creating param.sfo..."
+	vita-mksfoex -s TITLE_ID=$(TITLE_ID) "$(TITLE_NAME)" param.sfo
+
+# Generic object file rules
+objs/%.o: src/%.cpp
+	@mkdir -p objs
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+objs/%.o: src/%.c
+	@mkdir -p objs
+	$(CC) $(CFLAGS) -c $< -o $@
+
+objs/%.o: ../../JGE/src/%.cpp
+	@mkdir -p objs
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean rules
+clean:
+	@echo "Cleaning build files..."
+	@rm -rf objs deps $(TARGET).elf $(TARGET).velf eboot.bin param.sfo $(TARGET).vpk pkg
+
+distclean: clean
+	@rm -rf pkg
+
+.PHONY: all clean distclean
+
+# Help
+help:
+	@echo "Wagic Vita Build System"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all       - Build the VPK package (default)"
+	@echo "  clean     - Remove build artifacts"
+	@echo "  distclean - Remove all generated files"
+	@echo "  help      - Show this help message"
+	@echo ""
+	@echo "Requirements:"
+	@echo "  - VitaSDK must be installed"
+	@echo "  - Set VITASDK environment variable"
