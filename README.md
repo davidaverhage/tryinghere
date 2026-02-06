@@ -2,6 +2,8 @@
 
 This repository contains Wagic, the Homebrew card game, configured to build for PlayStation Vita with `.vpk` output support.
 
+> **📋 Complete Implementation Summary**: See [BUILD_COMPLETE.md](BUILD_COMPLETE.md) for a comprehensive overview of everything included.
+
 ## About Wagic
 
 Wagic is a C++ game engine that allows you to play Magic: The Gathering-style card games against an AI. This port brings the game to PlayStation Vita.
